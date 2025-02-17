@@ -146,7 +146,7 @@ const BookingForm = () => {
     
     // Add company logo/header
     doc.setFontSize(20);
-    doc.text('OCEANORACLE SHIPPING', 105, 15, { align: 'center' });
+    doc.text('Web Waves SHIPPING', 105, 15, { align: 'center' });
     
     // Add invoice details
     doc.setFontSize(12);
