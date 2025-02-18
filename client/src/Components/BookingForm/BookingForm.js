@@ -201,116 +201,137 @@ const BookingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const formErrors = {};
     Object.keys(formData).forEach((key) => {
-        if (formData[key] !== '' && formData[key] !== null) { 
-            const error = validateField(key, formData[key]);
-            if (error) formErrors[key] = error;
-        }
+      if (formData[key] !== '' && formData[key] !== null) { 
+        const error = validateField(key, formData[key]);
+        if (error) formErrors[key] = error;
+      }
     });
-
+  
     // Check if there are validation errors
     if (Object.keys(formErrors).length > 0) {
-        console.error('Form validation errors:', JSON.stringify(formErrors, null, 2));
-        alert('Please fill in all required fields correctly.');
-        return;
+      console.error('Form validation errors:', JSON.stringify(formErrors, null, 2));
+      alert('Please fill in all required fields correctly.');
+      return;
     }
-
+  
     if (!dateError) {
-        try {
-            // Prepare booking data
-            const bookingData = {
-                ...formData,
-                preferredShippingDate: formData.preferredShippingDate 
-                    ? new Date(formData.preferredShippingDate).toISOString() 
-                    : null,
-            };
-
-            // Create booking
-            const bookingResponse = await axios.post(
-                `${Base_URL}/api/booking/bookings`,
-                bookingData
-            );
-            console.log('Booking Successful:', bookingResponse.data);
-
-            // Create Razorpay order
-            const orderResponse = await axios.post(
-                `${Base_URL}/api/payment/create-order`,
-                {
-                    amount: 10000 * 100, 
-                    bookingId: bookingResponse.data.data._id
-                }
-            );
-
-            // Configure Razorpay options
-            const options = {
-                key: process.env.REACT_APP_RAZORPAY_KEY_ID,
-                amount: orderResponse.data.order.amount,
-                currency: "INR",
-                name: "WEB WAVES PAYMENT GATEWAY",
-                description: "Booking Payment",
-                order_id: orderResponse.data.order.id,
-                handler: async function (response) {
-                    try {
-                        // Verify payment
-                        const verificationResponse = await axios.post(
-                            `${Base_URL}/api/payment/verify`,
-                            {
-                                bookingId: bookingResponse.data.data._id,
-                                paymentId: response.razorpay_payment_id,
-                                orderId: response.razorpay_order_id,
-                                signature: response.razorpay_signature,
-                                amount: orderResponse.data.order.amount
-                            }
-                        );
-
-                        // Generate and download bill
-                        generateBill(bookingResponse.data.data, {
-                            paymentId: response.razorpay_payment_id,
-                            amount: orderResponse.data.order.amount
-                        });
-
-                        Swal.fire({
-                            title: "Payment successful!",
-                            text: "Booking confirmed and invoice has been downloaded",
-                            icon: "success"
-                        });
-
-                        navigate('/dashboard');
-                    } catch (error) {
-                        console.error('Payment verification failed:', error);
-                        alert('Payment verification failed. Please contact support.');
-                    }
-                },
-                prefill: {
-                    name: formData.shipperName,
-                    email: formData.shipperEmail,
-                    contact: formData.shipperPhone
-                },
-                theme: {
-                    color: "#3399cc"
-                }
-            };
-
-            const razorpay = new window.Razorpay(options);
-            razorpay.open();
-        } catch (error) {
-            console.error('Error:', error);
-            let errorMessage = 'An error occurred. Please try again.';
-
-            if (error.response) {
-                console.error('Error data:', error.response.data);
-                errorMessage = error.response.data.message || errorMessage;
+      try {
+        // Prepare booking data
+        const bookingData = {
+          ...formData,
+          preferredShippingDate: formData.preferredShippingDate 
+              ? new Date(formData.preferredShippingDate).toISOString() 
+              : null,
+        };
+  
+        // Create booking
+        const bookingResponse = await axios.post(
+          `${Base_URL}/api/booking/bookings`,
+          bookingData
+        );
+        console.log('Booking Successful:', bookingResponse.data);
+  
+        // Create Razorpay order
+        const orderResponse = await axios.post(
+          `${Base_URL}/api/payment/create-order`,
+          {
+            amount: 10000 * 100, 
+            bookingId: bookingResponse.data.data._id
+          }
+        );
+  
+        // Show SweetAlert2 popup to confirm payment
+        const result = await Swal.fire({
+          title: 'Confirm Payment',
+          text: `The amount to be paid is ₹${orderResponse.data.order.amount / 100}`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, Proceed',
+          cancelButtonText: 'No, Cancel'
+        });
+  
+        // If the user clicks "Yes, Proceed", open Razorpay payment
+        if (result.isConfirmed) {
+          // Configure Razorpay options
+          const options = {
+            key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+            amount: orderResponse.data.order.amount,
+            currency: "INR",
+            name: "WEB WAVES PAYMENT GATEWAY",
+            description: "Booking Payment",
+            order_id: orderResponse.data.order.id,
+            handler: async function (response) {
+              try {
+                // Verify payment
+                const verificationResponse = await axios.post(
+                  `${Base_URL}/api/payment/verify`,
+                  {
+                    bookingId: bookingResponse.data.data._id,
+                    paymentId: response.razorpay_payment_id,
+                    orderId: response.razorpay_order_id,
+                    signature: response.razorpay_signature,
+                    amount: orderResponse.data.order.amount
+                  }
+                );
+  
+                // Generate and download bill
+                generateBill(bookingResponse.data.data, {
+                  paymentId: response.razorpay_payment_id,
+                  amount: orderResponse.data.order.amount
+                });
+  
+                Swal.fire({
+                  title: "Payment successful!",
+                  text: "Booking confirmed and invoice has been downloaded",
+                  icon: "success"
+                });
+  
+                navigate('/dashboard');
+              } catch (error) {
+                console.error('Payment verification failed:', error);
+                alert('Payment verification failed. Please contact support.');
+              }
+            },
+            prefill: {
+              name: formData.shipperName,
+              email: formData.shipperEmail,
+              contact: formData.shipperPhone
+            },
+            theme: {
+              color: "#3399cc"
             }
-
-            alert(errorMessage);
+          };
+  
+          const razorpay = new window.Razorpay(options);
+          razorpay.open();
+        } else {
+          Swal.fire({
+            title: 'Payment Canceled',
+            text: 'The payment process was canceled.',
+            icon: 'info'
+          });
         }
+  
+      } catch (error) {
+        console.error('Error:', error);
+        let errorMessage = 'An error occurred. Please try again.';
+  
+        if (error.response) {
+          console.error('Error data:', error.response.data);
+          errorMessage = error.response.data.message || errorMessage;
+        }
+  
+        alert(errorMessage);
+      }
     } else {
-        console.error('Date validation error:', dateError);
-        alert('Please enter a valid shipping date.');
+      console.error('Date validation error:', dateError);
+      alert('Please enter a valid shipping date.');
     }
-};
+  };
+  
 
 
   return (
