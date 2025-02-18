@@ -14,6 +14,7 @@ import Profile from "./Pages/Profile";
 import LoginNavbar from "./Pages/LoginNavbar";
 import UsersList from "./Pages/AdminPages/UsersList";
 import ShipSchedules from "./Pages/ShipSchedules";
+import BookingPage from "./Pages/AdminPages/BookingPage";
 function App() {
   return (
     <div className="App">
@@ -33,6 +34,7 @@ function App() {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/admin-dashboard/ships-form" element={<AddShipFormPage />} />
             <Route path="/admin-dashboard/users" element={<UsersList />} />
+            <Route path="/admin-dashboard/bookings" element={<BookingPage/>} />
           </Route>
         </Routes>
       </Router>

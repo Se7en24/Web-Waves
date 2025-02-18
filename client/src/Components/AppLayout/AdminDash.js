@@ -16,8 +16,6 @@ const AdminDash = () => {
   const navigate = useNavigate();
 
   const dashboardItems = [
-    { title: 'Ships', icon: <DirectionsBoatIcon />, path: '/admin-dashboard/ships' },
-    { title: 'Schedules', icon: <ScheduleIcon />, path: '/admin-dashboard/schedules' },
     { title: 'Users', icon: <PeopleIcon />, path: '/admin-dashboard/users' },
     { title: 'Bookings', icon: <BookOnlineIcon />, path: '/admin-dashboard/bookings' },
   ];
